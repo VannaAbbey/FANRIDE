@@ -1,0 +1,40 @@
+﻿@model FanRide.Models.RegisterViewModel
+
+
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h2>Register</h2>
+
+<form method="post" asp-controller="Account" asp-action="Register">
+    <label>First Name</label>
+    <input asp-for="FirstName" class="form-control" required />
+    <br />
+    <label>Middle Name</label>
+    <input asp-for="MiddleName" class="form-control" />
+    <br />
+    <label>Last Name</label>
+    <input asp-for="LastName" class="form-control" required />
+    <br />
+    <label>Email</label>
+    <input asp-for="Email" type="email" class="form-control" required />
+    <br />
+    <label>Password</label>
+    <input asp-for="Password" type="password" class="form-control" required />
+    <br />
+    <label>Province</label>
+    <input asp-for="Province" class="form-control" />
+    <br />
+    <label>Role</label>
+    <select asp-for="Role" class="form-control">
+        <option>Rider</option>
+        <option>Driver</option>
+        <option>Admin</option>
+    </select>
+    <br />
+    <button type="submit" class="btn btn-success">Register</button>
+</form>

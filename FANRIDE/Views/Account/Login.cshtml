@@ -1,0 +1,24 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Login";
+}
+
+<h2>Login</h2>
+
+<form method="post" asp-controller="Account" asp-action="Login">
+    <label>Email</label>
+    <input type="email" name="email" required class="form-control" />
+    <br />
+    <label>Password</label>
+    <input type="password" name="password" required class="form-control" />
+    <br />
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+@if (ViewBag.Error != null)
+{
+    <div class="text-danger">@ViewBag.Error</div>
+}
+
