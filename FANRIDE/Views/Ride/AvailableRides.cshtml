@@ -1,5 +1,50 @@
-﻿@*
+﻿@model List<FanRide.Models.Ride>
+
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    ViewData["Title"] = "Available Rides";
+    var eventId = ViewBag.EventId;
 }
+
+<h2>Available Rides for Event @eventId</h2>
+
+@if (Model == null || !Model.Any())
+{
+    <p>No rides available for this event yet.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Driver Name</th>
+                <th>Car Type</th>
+                <th>Total Seats</th>
+                <th>Available Seats</th>
+                <th>Departure Time</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ride in Model)
+            {
+                <tr>
+                    <td>@ride.DriverName</td>
+                    <td>@ride.CarType</td>
+                    <td>@ride.CarSeatsTotal</td>
+                    <td>@(ride.CarSeatsTotal - ride.SeatsTaken)</td>
+                    <td>@ride.DepartureTime.ToString("g")</td>
+                    <td>
+                        <form method="post" asp-controller="Ride" asp-action="ExpressInterest">
+                            <input type="hidden" name="rideId" value="@ride.Id" />
+                            <button class="btn btn-primary" type="submit">Express Interest</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+

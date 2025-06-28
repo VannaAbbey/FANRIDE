@@ -1,10 +1,101 @@
-﻿@*
+﻿@model List<FanRide.Models.Event>
+
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
     ViewData["Title"] = "Rider Dashboard";
 }
 
-<h2>Welcome to the Rider Dashboard!</h2>
-<p>This is where you will see ride offers and concert events.</p>
+<style>
+    body {
+        background-color: #f5f5f5;
+        color: black;
+    }
 
+    .gradient-banner {
+        background: linear-gradient(to right, #9738EB, #410391);
+        color: white;
+        padding: 30px 25px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+        background-color: white;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+    .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: black;
+    }
+
+    .btn-outline-primary {
+        border-color: #6c63ff;
+        color: #6c63ff;
+    }
+
+        .btn-outline-primary:hover {
+            background-color: #6c63ff;
+            color: white;
+        }
+
+    .event-description {
+        font-size: 0.95rem;
+    }
+
+    .card-img-top {
+        height: 180px;
+        object-fit: cover;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="gradient-banner">
+        <h2 class="mb-2">📅 Upcoming K-Pop Events</h2>
+        <p class="mb-0">Click an event card to view available rides.</p>
+    </div>
+
+    <div class="row">
+        @foreach (var concert in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <a href="@Url.Action("AvailableRides", "Ride", new { eventId = concert.Id })" class="text-decoration-none text-dark">
+                        <img src="@concert.ImageUrl" class="card-img-top" alt="@concert.Title">
+                        <div class="card-body">
+                            <h5 class="card-title">@concert.Title</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">@concert.Artist</h6>
+                            <p>📅 @concert.Date.ToString("MMMM d, yyyy hh:mm tt")</p>
+                            <p>📍 @concert.Location</p>
+                            <p class="event-description">@concert.Description</p>
+                        </div>
+                    </a>
+                    <div class="px-3 pb-3">
+                        <form asp-action="ExpressInterest" asp-controller="Event" method="post">
+                            <input type="hidden" name="id" value="@concert.Id" />
+                            <button type="submit" class="btn btn-outline-primary btn-sm">❤️ Express Interest</button>
+                            <span class="text-muted small ms-2">@concert.InterestCount interested</span>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
