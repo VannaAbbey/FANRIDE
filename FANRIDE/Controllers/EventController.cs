@@ -40,12 +40,5 @@ namespace FanRide.Controllers
             };
         }
 
-        [HttpPost]
-        public IActionResult ExpressInterest(int id)
-        {
-            // Add logic to increment interest in DB if needed
-            TempData["Message"] = "Interest expressed!";
-            return RedirectToAction("Dashboard", "Event");
-        }
     }
 }

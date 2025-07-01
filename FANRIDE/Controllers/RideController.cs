@@ -1,104 +1,168 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using FanRide.Models; // <-- Import mo dapat ito
+using FanRide.Models;
 using System.Collections.Generic;
-using System.Linq;
 using System;
+using MySql.Data.MySqlClient;
+using System.Security.Claims;
 
 namespace FanRide.Controllers
 {
     public class RideController : Controller
     {
-        private static List<Ride> SampleRides = new List<Ride>
-        {
-            new Ride
-            {
-                Id = 1,
-                EventId = 1,
-                DriverName = "Chris Rider",
-                DriverImageUrl = "/images/chris.jpg",
-                FromLocation = "SM Megamall, Mandaluyong",
-                DepartureTime = DateTime.Today.AddHours(17).AddMinutes(21),
-                CarType = "White Honda City",
-                SeatTypes = new List<SeatType>
-                {
-                    new SeatType { TypeId = 101, TypeName = "Front Passenger", Price = 250, Available = 1 },
-                    new SeatType { TypeId = 102, TypeName = "Rear Window", Price = 200, Available = 2 }
-                }
-            },
-
-            new Ride
-            {
-                Id = 2,
-                EventId = 1,
-                DriverName = "Jennie Drive",
-                DriverImageUrl = "/images/jennie.jpg",
-                FromLocation = "Ayala Malls Solenad, Nuvali",
-                DepartureTime = DateTime.Today.AddHours(15).AddMinutes(45),
-                CarType = "Black Toyota Vios",
-                SeatTypes = new List<SeatType>
-                {
-                    new SeatType { TypeId = 103, TypeName = "Front Passenger", Price = 230, Available = 1 },
-                    new SeatType { TypeId = 104, TypeName = "Rear Middle", Price = 180, Available = 1 }
-                }
-            },
-            new Ride
-            {
-                Id = 3,
-                EventId = 1,
-                DriverName = "Lisa Wheels",
-                DriverImageUrl = "/images/lisa.jpg",
-                FromLocation = "Robinsons Tagapo, Sta. Rosa",
-                DepartureTime = DateTime.Today.AddHours(16).AddMinutes(10),
-                CarType = "Blue Ford EcoSport",
-                SeatTypes = new List<SeatType>
-                {
-                    new SeatType { TypeId = 105, TypeName = "Rear Window", Price = 200, Available = 2 },
-                    new SeatType { TypeId = 106, TypeName = "Front Passenger", Price = 240, Available = 1 }
-                }
-            }
-        };
+        private readonly string _connectionString = "server=localhost;database=fanride_db;user=root;password=Web123;";
 
         public IActionResult AvailableRides(int eventId)
         {
-            var rides = SampleRides
-                .Where(r => r.EventId == eventId)
-                .Select(r => new RideViewModel
-                {
-                    Id = r.Id,
-                    DriverName = r.DriverName,
-                    DriverImageUrl = r.DriverImageUrl,
-                    DepartureLocation = r.FromLocation,
-                    DepartureTime = r.DepartureTime,
-                    CarDescription = r.CarType,
-                    TotalSeatsLeft = r.SeatTypes.Sum(s => s.Available),
-                    SeatTypes = r.SeatTypes
-                }).ToList();
-
+            var rides = GetAvailableRidesFromDatabase(eventId);
             return View("AvailableRides", rides);
         }
 
         [HttpPost]
         public IActionResult BookRide(int rideId, Dictionary<int, int> seatQuantities)
         {
-            var ride = SampleRides.FirstOrDefault(r => r.Id == rideId);
-            if (ride != null && seatQuantities != null)
+            int userId = GetCurrentUserId();
+            if (userId == 0)
             {
-                foreach (var seat in ride.SeatTypes)
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (seatQuantities != null)
+            {
+                using (var connection = new MySqlConnection(_connectionString))
                 {
-                    if (seatQuantities.TryGetValue(seat.TypeId, out int qty))
+                    connection.Open();
+                    foreach (var kvp in seatQuantities)
                     {
-                        if (qty > 0 && qty <= seat.Available)
+                        int seatTypeId = kvp.Key;
+                        int qty = kvp.Value;
+
+                        if (qty > 0)
                         {
-                            seat.Available -= qty;
+                            decimal price = GetSeatPrice(seatTypeId, connection);
+
+                            var command = new MySqlCommand(@"
+                                INSERT INTO Bookings (UserId, RideId, SeatTypeId, SeatCount, Price, Status)
+                                VALUES (@UserId, @RideId, @SeatTypeId, @SeatCount, @Price, @Status)", connection);
+
+                            command.Parameters.AddWithValue("@UserId", userId);
+                            command.Parameters.AddWithValue("@RideId", rideId);
+                            command.Parameters.AddWithValue("@SeatTypeId", seatTypeId);
+                            command.Parameters.AddWithValue("@SeatCount", qty);
+                            command.Parameters.AddWithValue("@Price", price * qty);
+                            command.Parameters.AddWithValue("@Status", "Confirmed");
+
+                            command.ExecuteNonQuery();
                         }
                     }
                 }
+
+                TempData["Success"] = "Booking successful!";
+                return RedirectToAction("AvailableRides", new { eventId = 1 });
             }
 
-            TempData["Success"] = "Booking successful!";
-            return RedirectToAction("AvailableRides", new { eventId = ride?.EventId ?? 1 });
+            TempData["Error"] = "Booking failed. Please try again.";
+            return RedirectToAction("AvailableRides", new { eventId = 1 });
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                return userId;
+            }
+            return 0;
+        }
+
+        private decimal GetSeatPrice(int seatTypeId, MySqlConnection connection)
+        {
+            var cmd = new MySqlCommand("SELECT CASE WHEN Id = 1 THEN 250 WHEN Id = 2 THEN 200 ELSE 0 END FROM SeatTypes WHERE Id = @Id", connection);
+            cmd.Parameters.AddWithValue("@Id", seatTypeId);
+            var result = cmd.ExecuteScalar();
+            return result != null ? Convert.ToDecimal(result) : 0;
+        }
+
+        private List<RideViewModel> GetAvailableRidesFromDatabase(int eventId)
+        {
+            var rides = new List<RideViewModel>();
+            var filteredRides = new List<RideViewModel>();
+
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                var rideCmd = new MySqlCommand(@"
+                    SELECT R.Id AS RideId, R.DriverId, R.CarType, R.CarSeatsTotal, R.DepartureTime,
+                           U.FirstName, U.LastName
+                    FROM Rides R
+                    JOIN Users U ON R.DriverId = U.Id
+                    WHERE R.EventId = @EventId AND R.IsApproved = TRUE", connection);
+
+                rideCmd.Parameters.AddWithValue("@EventId", eventId);
+                var reader = rideCmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    rides.Add(new RideViewModel
+                    {
+                        Id = reader.GetInt32("RideId"),
+                        DriverName = reader.GetString("FirstName") + " " + reader.GetString("LastName"),
+                        DepartureLocation = "Pickup Point",
+                        DepartureTime = reader.GetDateTime("DepartureTime"),
+                        CarDescription = reader.GetString("CarType"),
+                        DriverImageUrl = "/images/default-driver.jpg",
+                        TotalSeatsLeft = 0,
+                        SeatTypes = new List<SeatType>()
+                    });
+                }
+                reader.Close();
+
+                foreach (var ride in rides)
+                {
+                    var seatCmd = new MySqlCommand(@"
+                        SELECT 
+                            S.Id AS TypeId,
+                            S.TypeName,
+                            S.TotalSeats - IFNULL(SUM(B.SeatCount), 0) AS AvailableSeats
+                        FROM SeatTypes S
+                        LEFT JOIN Bookings B ON B.SeatTypeId = S.Id AND B.RideId = @RideId
+                        GROUP BY S.Id, S.TypeName, S.TotalSeats", connection);
+
+                    seatCmd.Parameters.AddWithValue("@RideId", ride.Id);
+                    var seatReader = seatCmd.ExecuteReader();
+
+                    var seatTypes = new List<SeatType>();
+                    int totalAvailable = 0;
+
+                    while (seatReader.Read())
+                    {
+                        int available = seatReader.GetInt32("AvailableSeats");
+                        totalAvailable += available;
+
+                        seatTypes.Add(new SeatType
+                        {
+                            TypeId = seatReader.GetInt32("TypeId"),
+                            TypeName = seatReader.GetString("TypeName"),
+                            Price = seatReader.GetInt32("TypeId") == 1 ? 250 : 200,
+                            Available = available
+                        });
+                    }
+
+                    seatReader.Close();
+
+                    // Only include rides with available seats
+                    if (totalAvailable > 0)
+                    {
+                        ride.SeatTypes = seatTypes;
+                        ride.TotalSeatsLeft = totalAvailable;
+                        filteredRides.Add(ride);
+                    }
+                }
+
+                connection.Close();
+            }
+
+            return filteredRides;
         }
     }
-
-    // REMOVE the class definitions here. Ginawa na natin sa Models folder.
 }

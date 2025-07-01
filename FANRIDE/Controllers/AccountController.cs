@@ -34,7 +34,7 @@ namespace FanRide.Controllers
                 Email = model.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
                 Province = model.Province,
-                Role = model.Role ?? "Rider"
+                Role = model.Role?.Trim().ToLower() == "admin" ? "Admin" : "Rider" // Default to Rider
             };
 
             using var conn = new MySqlConnection(_connectionString);
@@ -43,7 +43,8 @@ namespace FanRide.Controllers
             var cmd = new MySqlCommand(@"
                 INSERT INTO Users 
                 (FirstName, MiddleName, LastName, Email, PasswordHash, Province, Role)
-                VALUES (@FirstName, @MiddleName, @LastName, @Email, @PasswordHash, @Province, @Role)", conn);
+                VALUES (@FirstName, @MiddleName, @LastName, @Email, @PasswordHash, @Province, @Role);
+                SELECT LAST_INSERT_ID();", conn);
 
             cmd.Parameters.AddWithValue("@FirstName", user.FirstName);
             cmd.Parameters.AddWithValue("@MiddleName", user.MiddleName ?? "");
@@ -53,11 +54,11 @@ namespace FanRide.Controllers
             cmd.Parameters.AddWithValue("@Province", user.Province ?? "");
             cmd.Parameters.AddWithValue("@Role", user.Role);
 
-            cmd.ExecuteNonQuery();
+            user.Id = Convert.ToInt32(cmd.ExecuteScalar()); // Get generated ID
 
-            // Auto-login after registration
             var claims = new List<Claim>
             {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.FirstName),
                 new Claim(ClaimTypes.Role, user.Role),
                 new Claim("Email", user.Email)
@@ -67,14 +68,12 @@ namespace FanRide.Controllers
             var principal = new ClaimsPrincipal(identity);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-            // Redirect based on role
-            if (user.Role.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            if (user.Role == "Admin")
                 return RedirectToAction("Dashboard", "Admin");
-            else if (user.Role.Equals("rider", StringComparison.OrdinalIgnoreCase))
+            else if (user.Role == "Rider")
                 return RedirectToAction("Dashboard", "Riders");
-            // ✅ fixed for Razor Pages
-            else
-                return RedirectToAction("Login");
+
+            return RedirectToAction("Login");
         }
 
         [HttpPost]
@@ -92,11 +91,13 @@ namespace FanRide.Controllers
                 string storedHash = reader["PasswordHash"].ToString();
                 string role = reader["Role"].ToString();
                 string name = reader["FirstName"].ToString();
+                int id = Convert.ToInt32(reader["Id"]);
 
                 if (BCrypt.Net.BCrypt.Verify(password, storedHash))
                 {
                     var claims = new List<Claim>
                     {
+                        new Claim(ClaimTypes.NameIdentifier, id.ToString()),
                         new Claim(ClaimTypes.Name, name),
                         new Claim(ClaimTypes.Role, role),
                         new Claim("Email", email)
@@ -107,12 +108,10 @@ namespace FanRide.Controllers
 
                     await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-                    // Redirect based on role
-                    if (role.Equals("admin", StringComparison.OrdinalIgnoreCase))
+                    if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                         return RedirectToAction("Dashboard", "Admin");
-                    else if (role.Equals("rider", StringComparison.OrdinalIgnoreCase))
+                    else if (role.Equals("Rider", StringComparison.OrdinalIgnoreCase))
                         return RedirectToAction("Dashboard", "Riders");
-                    // ✅ fixed for Razor Pages
                 }
             }
 

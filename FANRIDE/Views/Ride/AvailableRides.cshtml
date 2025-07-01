@@ -3,6 +3,12 @@
 @{
     ViewData["Title"] = "Available Rides";
 }
+<!-- Back to Dashboard Button -->
+<div class="mb-3">
+    <a asp-controller="Riders" asp-action="Dashboard" class="btn btn-outline-secondary">
+        ← Back to Dashboard
+    </a>
+</div>
 
 <div class="container py-5">
     <h2 class="text-center mb-4">🚗 Available Rides</h2>
@@ -12,45 +18,54 @@
         <div class="alert alert-success text-center">@TempData["Success"]</div>
     }
 
-    <div class="d-flex flex-column align-items-center gap-4">
-        @foreach (var ride in Model)
-        {
-            <div class="card shadow rounded" style="max-width: 900px; width: 100%;">
-                <div class="row g-0">
-                    <div class="col-md-4 text-center p-3">
-                        <img src="@ride.DriverImageUrl" class="img-fluid rounded-circle mb-2" style="width: 100px; height: 100px;" alt="Driver">
-                        <h5 class="mb-0">@ride.DriverName</h5>
-                        <small class="text-muted">Driver</small>
-                    </div>
-                    <div class="col-md-8">
-                        <div class="card-body">
-                            <p><strong>From:</strong> @ride.DepartureLocation</p>
-                            <p><strong>Departs:</strong> @ride.DepartureTime.ToString("h:mm tt")</p>
-                            <p><strong>Car:</strong> @ride.CarDescription</p>
-                            <p><strong>Total Seats Left:</strong> @ride.TotalSeatsLeft</p>
+    @if (Model != null && Model.Any())
+    {
+        <div class="d-flex flex-column align-items-center gap-4">
+            @foreach (var ride in Model)
+            {
+                <div class="card shadow rounded" style="max-width: 900px; width: 100%;">
+                    <div class="row g-0">
+                        <div class="col-md-4 text-center p-3">
+                            <img src="@ride.DriverImageUrl" class="img-fluid rounded-circle mb-2" style="width: 100px; height: 100px;" alt="Driver">
+                            <h5 class="mb-0">@ride.DriverName</h5>
+                            <small class="text-muted">Driver</small>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <p><strong>From:</strong> @ride.DepartureLocation</p>
+                                <p><strong>Departs:</strong> @ride.DepartureTime.ToString("h:mm tt")</p>
+                                <p><strong>Car:</strong> @ride.CarDescription</p>
+                                <p><strong>Total Seats Left:</strong> @ride.TotalSeatsLeft</p>
 
-                            <form asp-action="BookRide" asp-controller="Ride" method="post">
-                                <input type="hidden" name="rideId" value="@ride.Id" />
+                                <form asp-action="BookRide" asp-controller="Ride" method="post">
+                                    <input type="hidden" name="rideId" value="@ride.Id" />
 
-                                <div class="mb-2">
-                                    <strong>Seat Options:</strong>
-                                    <div class="row">
-                                        @foreach (var seat in ride.SeatTypes)
-                                        {
-                                            <div class="col-6 mb-2">
-                                                <label>@seat.TypeName (₱@seat.Price) - Left: @seat.Available</label>
-                                                <input type="number" name="seatQuantities[@seat.TypeId]" class="form-control" min="0" max="@seat.Available" value="0" />
-                                            </div>
-                                        }
+                                    <div class="mb-2">
+                                        <strong>Seat Options:</strong>
+                                        <div class="row">
+                                            @foreach (var seat in ride.SeatTypes)
+                                            {
+                                                <div class="col-6 mb-2">
+                                                    <label>@seat.TypeName (₱@seat.Price) - Left: @seat.Available</label>
+                                                    <input type="number" name="seatQuantities[@seat.TypeId]" class="form-control" min="0" max="@seat.Available" value="0" />
+                                                </div>
+                                            }
+                                        </div>
                                     </div>
-                                </div>
 
-                                <button type="submit" class="btn btn-success mt-2 w-100">Book Ride</button>
-                            </form>
+                                    <button type="submit" class="btn btn-success mt-2 w-100">Book Ride</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            No rides available for this event at the moment.
+        </div>
+    }
 </div>

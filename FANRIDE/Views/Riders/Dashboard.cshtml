@@ -1,8 +1,5 @@
 ﻿@model List<FanRide.Models.Event>
 
-@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
 @{
     ViewData["Title"] = "Rider Dashboard";
 }
@@ -72,6 +69,27 @@
         <p class="mb-0">Click an event card to view available rides.</p>
     </div>
 
+    @if (TempData["InterestSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+            @TempData["InterestSuccess"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["InterestError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+            @TempData["InterestError"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="text-center mt-4 mb-5">
+        <a asp-controller="Riders" asp-action="MyBookings" class="btn btn-primary btn-lg">
+            View My Bookings
+        </a>
+    </div>
+
     <div class="row">
         @foreach (var concert in Model)
         {
@@ -87,10 +105,13 @@
                             <p class="event-description">@concert.Description</p>
                         </div>
                     </a>
+
                     <div class="px-3 pb-3">
-                        <form asp-action="ExpressInterest" asp-controller="Event" method="post">
+                        <form asp-action="ExpressInterest" asp-controller="Riders" method="post">
                             <input type="hidden" name="id" value="@concert.Id" />
-                            <button type="submit" class="btn btn-outline-primary btn-sm">❤️ Express Interest</button>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                ❤️ Express Interest
+                            </button>
                             <span class="text-muted small ms-2">@concert.InterestCount interested</span>
                         </form>
                     </div>
