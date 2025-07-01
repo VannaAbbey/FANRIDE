@@ -10,7 +10,7 @@ namespace FanRide.Controllers
     public class RideController : Controller
     {
         private readonly string _connectionString = "server=localhost;database=fanride_db;user=root;password=Web123;";
-
+ 
         public IActionResult AvailableRides(int eventId)
         {
             var rides = GetAvailableRidesFromDatabase(eventId);
