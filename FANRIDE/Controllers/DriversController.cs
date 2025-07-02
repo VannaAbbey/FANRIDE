@@ -16,14 +16,23 @@ namespace FanRide.Controllers
         {
             var events = new List<Event>();
 
-            using (var connection = new MySqlConnection(_connectionString))
+            try
             {
-                connection.Open();
-                var cmd = new MySqlCommand("SELECT * FROM Events ORDER BY DateTime ASC", connection);
-                var reader = cmd.ExecuteReader();
+                using var conn = new MySqlConnection(_connectionString);
+                conn.Open();
 
+                var cmd = new MySqlCommand(@"
+            SELECT Id, Title, Artist, DateTime, Location, Description, ImageUrl
+            FROM Events
+            ORDER BY DateTime ASC;", conn);
+
+                using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
+                    var imageFile = reader.IsDBNull(reader.GetOrdinal("ImageUrl"))
+                        ? "default-concert.jpg"
+                        : reader.GetString("ImageUrl");
+
                     events.Add(new Event
                     {
                         Id = reader.GetInt32("Id"),
@@ -32,9 +41,14 @@ namespace FanRide.Controllers
                         Date = reader.GetDateTime("DateTime"),
                         Location = reader.GetString("Location"),
                         Description = reader.GetString("Description"),
-                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("ImageUrl")) ? "/images/default-concert.jpg" : reader.GetString("ImageUrl")
+                        ImageUrl = $"/images/{imageFile}"
                     });
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Driver Dashboard Load Error: " + ex.Message);
+                ViewBag.Error = "Failed to load events.";
             }
 
             return View("Dashboard", events);
@@ -53,10 +67,10 @@ namespace FanRide.Controllers
                 }).ToList()
             };
 
-            if (TempData.ContainsKey("Success"))
+            if (TempData["Success"] != null)
                 ViewBag.Success = TempData["Success"];
 
-            if (TempData.ContainsKey("Error"))
+            if (TempData["Error"] != null)
                 ViewBag.Error = TempData["Error"];
 
             return View("AddRide", model);
@@ -83,44 +97,38 @@ namespace FanRide.Controllers
 
             try
             {
-                using (var conn = new MySqlConnection(_connectionString))
+                using var conn = new MySqlConnection(_connectionString);
+                conn.Open();
+
+                int carSeatsTotal = 1 + model.RearSeatCount;
+
+                var cmd = new MySqlCommand(@"
+                    INSERT INTO Rides 
+                    (DriverId, EventId, LandmarkId, CarType, PlateNumber, CarSeatsTotal, DepartureTime, IsApproved)
+                    VALUES 
+                    (@DriverId, @EventId, @LandmarkId, @CarType, @PlateNumber, @CarSeatsTotal, @DepartureTime, TRUE);", conn);
+
+                cmd.Parameters.AddWithValue("@DriverId", driverId);
+                cmd.Parameters.AddWithValue("@EventId", model.EventId);
+                cmd.Parameters.AddWithValue("@LandmarkId", model.LandmarkId);
+                cmd.Parameters.AddWithValue("@CarType", model.CarType);
+                cmd.Parameters.AddWithValue("@PlateNumber", model.PlateNumber);
+                cmd.Parameters.AddWithValue("@CarSeatsTotal", carSeatsTotal);
+                cmd.Parameters.AddWithValue("@DepartureTime", model.DepartureTime);
+
+                cmd.ExecuteNonQuery();
+                long newRideId = cmd.LastInsertedId;
+
+                var frontCmd = new MySqlCommand("INSERT INTO RideSeats (RideId, SeatTypeId, TotalSeats) VALUES (@RideId, 1, 1);", conn);
+                frontCmd.Parameters.AddWithValue("@RideId", newRideId);
+                frontCmd.ExecuteNonQuery();
+
+                if (model.RearSeatCount > 0)
                 {
-                    conn.Open();
-
-                    int carSeatsTotal = 1 + model.RearSeatCount;
-
-                    var cmd = new MySqlCommand(@"
-                        INSERT INTO Rides 
-                        (DriverId, EventId, LandmarkId, CarType, PlateNumber, CarSeatsTotal, DepartureTime, IsApproved)
-                        VALUES 
-                        (@DriverId, @EventId, @LandmarkId, @CarType, @PlateNumber, @CarSeatsTotal, @DepartureTime, TRUE);", conn);
-
-                    cmd.Parameters.AddWithValue("@DriverId", driverId);
-                    cmd.Parameters.AddWithValue("@EventId", model.EventId);
-                    cmd.Parameters.AddWithValue("@LandmarkId", model.LandmarkId);
-                    cmd.Parameters.AddWithValue("@CarType", model.CarType);
-                    cmd.Parameters.AddWithValue("@PlateNumber", model.PlateNumber);
-                    cmd.Parameters.AddWithValue("@CarSeatsTotal", carSeatsTotal);
-                    cmd.Parameters.AddWithValue("@DepartureTime", model.DepartureTime);
-
-                    cmd.ExecuteNonQuery();
-                    long newRideId = cmd.LastInsertedId;
-
-                    var frontCmd = new MySqlCommand(@"
-                        INSERT INTO RideSeats (RideId, SeatTypeId, TotalSeats)
-                        VALUES (@RideId, 1, 1);", conn);
-                    frontCmd.Parameters.AddWithValue("@RideId", newRideId);
-                    frontCmd.ExecuteNonQuery();
-
-                    if (model.RearSeatCount > 0)
-                    {
-                        var rearCmd = new MySqlCommand(@"
-                            INSERT INTO RideSeats (RideId, SeatTypeId, TotalSeats)
-                            VALUES (@RideId, 2, @TotalSeats);", conn);
-                        rearCmd.Parameters.AddWithValue("@RideId", newRideId);
-                        rearCmd.Parameters.AddWithValue("@TotalSeats", model.RearSeatCount);
-                        rearCmd.ExecuteNonQuery();
-                    }
+                    var rearCmd = new MySqlCommand("INSERT INTO RideSeats (RideId, SeatTypeId, TotalSeats) VALUES (@RideId, 2, @TotalSeats);", conn);
+                    rearCmd.Parameters.AddWithValue("@RideId", newRideId);
+                    rearCmd.Parameters.AddWithValue("@TotalSeats", model.RearSeatCount);
+                    rearCmd.ExecuteNonQuery();
                 }
 
                 TempData["Success"] = "✅ Ride posted successfully!";
@@ -150,80 +158,69 @@ namespace FanRide.Controllers
 
             try
             {
-                using (var connection = new MySqlConnection(_connectionString))
+                using var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new MySqlCommand(@"
+                    SELECT R.Id AS RideId, E.Title AS ConcertTitle, E.Location, L.Name AS LandmarkName,
+                           R.DepartureTime, R.CarType, R.PlateNumber, R.CarSeatsTotal
+                    FROM Rides R
+                    JOIN Events E ON R.EventId = E.Id
+                    JOIN Landmarks L ON R.LandmarkId = L.Id
+                    WHERE R.DriverId = @DriverId
+                    ORDER BY R.DepartureTime DESC;", connection);
+
+                cmd.Parameters.AddWithValue("@DriverId", driverId);
+                var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
                 {
-                    connection.Open();
-
-                    var cmd = new MySqlCommand(@"
-                        SELECT R.Id AS RideId, E.Title AS ConcertTitle, E.Location, L.Name AS LandmarkName,
-                               R.DepartureTime, R.CarType, R.PlateNumber, R.CarSeatsTotal
-                        FROM Rides R
-                        JOIN Events E ON R.EventId = E.Id
-                        JOIN Landmarks L ON R.LandmarkId = L.Id
-                        WHERE R.DriverId = @DriverId
-                        ORDER BY R.DepartureTime DESC;", connection);
-
-                    cmd.Parameters.AddWithValue("@DriverId", driverId);
-                    var reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
+                    rideList.Add(new RideWithPassengersViewModel
                     {
-                        rideList.Add(new RideWithPassengersViewModel
+                        RideId = reader.GetInt32("RideId"),
+                        ConcertTitle = reader.GetString("ConcertTitle"),
+                        Location = reader.GetString("Location"),
+                        LandmarkName = reader.GetString("LandmarkName"),
+                        DepartureTime = reader.GetDateTime("DepartureTime"),
+                        CarType = reader.GetString("CarType"),
+                        PlateNumber = reader.GetString("PlateNumber"),
+                        CarSeatsTotal = reader.GetInt32("CarSeatsTotal")
+                    });
+                }
+
+                reader.Close();
+
+                foreach (var ride in rideList)
+                {
+                    var seatCmd = new MySqlCommand(@"
+                        SELECT TotalSeats FROM RideSeats 
+                        WHERE RideId = @RideId AND SeatTypeId = 2;", connection);
+
+                    seatCmd.Parameters.AddWithValue("@RideId", ride.RideId);
+                    var result = seatCmd.ExecuteScalar();
+                    ride.RearSeats = result != null ? Convert.ToInt32(result) : 0;
+
+                    var pCmd = new MySqlCommand(@"
+                        SELECT U.FirstName, U.LastName, U.PhoneNumber, B.SeatCount, ST.TypeName
+                        FROM Bookings B
+                        JOIN Users U ON B.UserId = U.Id
+                        JOIN SeatTypes ST ON B.SeatTypeId = ST.Id
+                        WHERE B.RideId = @RideId;", connection);
+
+                    pCmd.Parameters.AddWithValue("@RideId", ride.RideId);
+                    var pReader = pCmd.ExecuteReader();
+
+                    while (pReader.Read())
+                    {
+                        ride.Passengers.Add(new PassengerInfo
                         {
-                            RideId = reader.GetInt32("RideId"),
-                            ConcertTitle = reader.GetString("ConcertTitle"),
-                            Location = reader.GetString("Location"),
-                            LandmarkName = reader.GetString("LandmarkName"),
-                            DepartureTime = reader.GetDateTime("DepartureTime"),
-                            CarType = reader.GetString("CarType"),
-                            PlateNumber = reader.GetString("PlateNumber"),
-                            CarSeatsTotal = reader.GetInt32("CarSeatsTotal")
+                            Name = $"{pReader.GetString("FirstName")} {pReader.GetString("LastName")}",
+                            PhoneNumber = pReader.GetString("PhoneNumber"),
+                            SeatCount = pReader.GetInt32("SeatCount"),
+                            SeatType = pReader.GetString("TypeName")
                         });
                     }
-
-                    reader.Close();
-
-                    foreach (var ride in rideList)
-                    {
-                        var pCmd = new MySqlCommand(@"
-                            SELECT U.FirstName, U.LastName, U.PhoneNumber, B.SeatCount, ST.TypeName
-                            FROM Bookings B
-                            JOIN Users U ON B.UserId = U.Id
-                            JOIN SeatTypes ST ON B.SeatTypeId = ST.Id
-                            WHERE B.RideId = @RideId;", connection);
-
-                        pCmd.Parameters.AddWithValue("@RideId", ride.RideId);
-                        var pReader = pCmd.ExecuteReader();
-
-                        while (pReader.Read())
-                        {
-                            ride.Passengers.Add(new PassengerInfo
-                            {
-                                Name = $"{pReader.GetString("FirstName")} {pReader.GetString("LastName")}",
-                                PhoneNumber = pReader.GetString("PhoneNumber"),
-                                SeatCount = pReader.GetInt32("SeatCount"),
-                                SeatType = pReader.GetString("TypeName")
-                            });
-                        }
-                        pReader.Close();
-
-                        var seatCmd = new MySqlCommand(@"
-                            SELECT SeatTypeId, TotalSeats FROM RideSeats
-                            WHERE RideId = @RideId", connection);
-
-                        seatCmd.Parameters.AddWithValue("@RideId", ride.RideId);
-                        var seatReader = seatCmd.ExecuteReader();
-
-                        while (seatReader.Read())
-                        {
-                            var seatType = seatReader.GetInt32("SeatTypeId");
-                            var totalSeats = seatReader.GetInt32("TotalSeats");
-
-                            if (seatType == 2)
-                                ride.RearSeats = totalSeats;
-                        }
-                        seatReader.Close();
-                    }
+                    pReader.Close();
                 }
             }
             catch (Exception ex)

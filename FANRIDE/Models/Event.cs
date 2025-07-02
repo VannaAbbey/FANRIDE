@@ -8,7 +8,10 @@
         public DateTime Date { get; set; }
         public string Location { get; set; }
         public string Description { get; set; }
-        public string ImageUrl { get; set; }
-        public int InterestCount { get; set; } = 0; // NEW
+        public string? ImageUrl { get; set; } // example: "bts.jpg"
+
+
+        // ✅ Add this if not present
+        public int InterestCount { get; set; }
     }
 }

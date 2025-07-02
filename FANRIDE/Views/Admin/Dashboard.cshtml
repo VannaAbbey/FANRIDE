@@ -1,9 +1,35 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model FanRide.Models.AdminDashboardViewModel
+
 @{
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h2>Welcome to the Admin Dashboard!</h2>
+<div class="container py-5">
+    <h2 class="text-center mb-4 text-2xl font-bold text-purple-800">🛠️ Admin Dashboard</h2>
 
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-start border-4 border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">📊 Total Drivers</h5>
+                    <h2 class="fw-bold text-primary">@Model.DriverCount</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-start border-4 border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">🧍‍♀️ Total Riders</h5>
+                    <h2 class="fw-bold text-success">@Model.PassengerCount</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a asp-action="AddEvent" class="btn btn-outline-dark btn-lg">
+            ➕ Add New Concert/Event
+        </a>
+    </div>
+</div>

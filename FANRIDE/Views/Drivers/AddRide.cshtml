@@ -65,7 +65,7 @@
         <!-- Rear Seats -->
 <div class="mb-3">
     <label asp-for="RearSeatCount" class="form-label">Rear Seats Available</label>
-    <input asp-for="RearSeatCount" class="form-control" type="number" min="0" />
+    <input asp-for="RearSeatCount" class="form-control" type="number" min="0"/>
     <span asp-validation-for="RearSeatCount" class="text-danger"></span>
 </div>
 
@@ -97,6 +97,8 @@
             <button type="submit" class="btn btn-primary px-5 py-2 fs-5">Post Ride</button>
         </div>
     </form>
+    Console.WriteLine("RearSeatCount: " + model.RearSeatCount);
+
 
 </div>
 

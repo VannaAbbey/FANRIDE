@@ -15,28 +15,27 @@ namespace FanRide.Controllers
         // Rider Dashboard
         public IActionResult Dashboard()
         {
-            var events = GetConcertsFromDatabase();
-            return View("Dashboard", events);
-        }
-
-        // Load concerts
-        private List<Event> GetConcertsFromDatabase()
-        {
-            var concerts = new List<Event>();
+            var events = new List<Event>();
 
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
+                using var conn = new MySqlConnection(_connectionString);
+                conn.Open();
+
                 var cmd = new MySqlCommand(@"
                     SELECT E.Id, E.Title, E.Artist, E.DateTime, E.Location, E.Description, E.ImageUrl,
-                           (SELECT COUNT(*) FROM InterestChecks IC WHERE IC.EventId = E.Id) AS InterestCount
-                    FROM Events E", connection);
+                           (SELECT COUNT(*) FROM InterestChecks WHERE EventId = E.Id) AS InterestCount
+                    FROM Events E
+                    ORDER BY E.DateTime ASC;", conn);
 
-                var reader = cmd.ExecuteReader();
+                using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    concerts.Add(new Event
+                    var imageFile = reader.IsDBNull(reader.GetOrdinal("ImageUrl"))
+                        ? "default-concert.jpg"
+                        : reader.GetString("ImageUrl");
+
+                    events.Add(new Event
                     {
                         Id = reader.GetInt32("Id"),
                         Title = reader.GetString("Title"),
@@ -44,7 +43,7 @@ namespace FanRide.Controllers
                         Date = reader.GetDateTime("DateTime"),
                         Location = reader.GetString("Location"),
                         Description = reader.GetString("Description"),
-                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("ImageUrl")) ? "/images/default-concert.jpg" : reader.GetString("ImageUrl"),
+                        ImageUrl = $"/images/{imageFile}",
                         InterestCount = reader.GetInt32("InterestCount")
                     });
                 }
@@ -55,7 +54,7 @@ namespace FanRide.Controllers
                 ViewBag.Error = "Could not load concerts.";
             }
 
-            return concerts;
+            return View("Dashboard", events);
         }
 
         public IActionResult MyBookings()
@@ -66,8 +65,6 @@ namespace FanRide.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            Console.WriteLine("🔎 MyBookings() called for user ID: " + userId);
-
             var bookings = new List<BookingDetails>();
 
             try
@@ -76,41 +73,35 @@ namespace FanRide.Controllers
                 connection.Open();
 
                 var cmd = new MySqlCommand(@"
-            SELECT 
-                B.Id AS BookingId,
-                E.Title AS ConcertName,
-                E.DateTime AS ConcertDate,
-                E.Location AS ConcertLocation,
-                R.DepartureTime,
-                R.CarType AS VehicleType,
-                R.PlateNumber,
-                L.Name AS Landmark,
-                ST.TypeName AS SeatType,
-                B.SeatCount,
-                B.Price,
-                B.Status,
-                U.FirstName AS DriverFirstName,
-                U.LastName AS DriverLastName,
-                U.PhoneNumber AS DriverPhone
-            FROM Bookings B
-            INNER JOIN Rides R ON B.RideId = R.Id
-            INNER JOIN Events E ON R.EventId = E.Id
-            INNER JOIN Landmarks L ON R.LandmarkId = L.Id
-            INNER JOIN SeatTypes ST ON B.SeatTypeId = ST.Id
-            INNER JOIN Users U ON R.DriverId = U.Id
-            WHERE B.UserId = @UserId", connection);
+                    SELECT 
+                        B.Id AS BookingId,
+                        E.Title AS ConcertName,
+                        E.DateTime AS ConcertDate,
+                        E.Location AS ConcertLocation,
+                        R.DepartureTime,
+                        R.CarType AS VehicleType,
+                        R.PlateNumber,
+                        L.Name AS Landmark,
+                        ST.TypeName AS SeatType,
+                        B.SeatCount,
+                        B.Price,
+                        B.Status,
+                        U.FirstName AS DriverFirstName,
+                        U.LastName AS DriverLastName,
+                        U.PhoneNumber AS DriverPhone
+                    FROM Bookings B
+                    INNER JOIN Rides R ON B.RideId = R.Id
+                    INNER JOIN Events E ON R.EventId = E.Id
+                    INNER JOIN Landmarks L ON R.LandmarkId = L.Id
+                    INNER JOIN SeatTypes ST ON B.SeatTypeId = ST.Id
+                    INNER JOIN Users U ON R.DriverId = U.Id
+                    WHERE B.UserId = @UserId;", connection);
 
                 cmd.Parameters.AddWithValue("@UserId", userId);
 
                 var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    // 🔍 DEBUG: Log which fields are null
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        Console.WriteLine($"{reader.GetName(i)} is null? {reader.IsDBNull(i)}");
-                    }
-
                     bookings.Add(new BookingDetails
                     {
                         BookingId = reader.GetInt32("BookingId"),
@@ -152,7 +143,7 @@ namespace FanRide.Controllers
 
                 var cmd = new MySqlCommand(@"
                     INSERT INTO InterestChecks (UserId, EventId)
-                    VALUES (NULL, @EventId)", connection);
+                    VALUES (NULL, @EventId);", connection);
 
                 cmd.Parameters.AddWithValue("@EventId", id);
                 cmd.ExecuteNonQuery();
@@ -162,6 +153,7 @@ namespace FanRide.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine("DB ERROR (ExpressInterest): " + ex.Message);
+                TempData["InterestError"] = "❌ Unable to record interest.";
             }
 
             return RedirectToAction("Dashboard");

@@ -31,6 +31,7 @@ namespace FanRide.Models
         [Range(0, 20, ErrorMessage = "Rear seat count must be between 0 and 20.")]
         public int RearSeatCount { get; set; } = 0;
 
+
         // ✅ Not required from form — auto-calculated as: 1 + RearSeatCount
         public int CarSeatsTotal { get; set; }
 
