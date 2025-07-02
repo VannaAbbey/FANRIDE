@@ -76,17 +76,44 @@ namespace FanRide.Controllers
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
 
-            var cmd = new MySqlCommand("SELECT * FROM Users WHERE Email = @Email", conn);
-            cmd.Parameters.AddWithValue("@Email", email);
-
-            using var reader = cmd.ExecuteReader();
-            if (reader.Read())
+            // 🔐 Hardcoded admin login using plaintext password
+            if (email == "admin@gmail.com" && password == "admin")
             {
-                string storedHash = reader["PasswordHash"].ToString()!;
-                string role = reader["Role"].ToString()!;
-                string name = reader["FirstName"].ToString()!;
-                string phone = reader["PhoneNumber"].ToString()!;
-                int id = Convert.ToInt32(reader["Id"]);
+                var cmd = new MySqlCommand("SELECT * FROM Users WHERE Email = @Email", conn);
+                cmd.Parameters.AddWithValue("@Email", email);
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    var user = new User
+                    {
+                        Id = Convert.ToInt32(reader["Id"]),
+                        FirstName = reader["FirstName"].ToString()!,
+                        Email = email,
+                        PhoneNumber = reader["PhoneNumber"].ToString()!,
+                        Role = reader["Role"].ToString()!
+                    };
+
+                    await SignInUser(user);
+                    return RedirectToRoleDashboard(user.Role);
+                }
+
+                ViewBag.Error = "Admin account not found in database.";
+                return View();
+            }
+
+            // 🔐 Normal login for all other users (with hashed password)
+            var normalCmd = new MySqlCommand("SELECT * FROM Users WHERE Email = @Email", conn);
+            normalCmd.Parameters.AddWithValue("@Email", email);
+
+            using var normalReader = normalCmd.ExecuteReader();
+            if (normalReader.Read())
+            {
+                string storedHash = normalReader["PasswordHash"].ToString()!;
+                string role = normalReader["Role"].ToString()!;
+                string name = normalReader["FirstName"].ToString()!;
+                string phone = normalReader["PhoneNumber"].ToString()!;
+                int id = Convert.ToInt32(normalReader["Id"]);
 
                 if (BCrypt.Net.BCrypt.Verify(password, storedHash))
                 {
@@ -107,6 +134,7 @@ namespace FanRide.Controllers
             ViewBag.Error = "Invalid email or password.";
             return View();
         }
+
 
         private async Task SignInUser(User user)
         {
