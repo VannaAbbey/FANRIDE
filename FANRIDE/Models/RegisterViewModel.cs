@@ -23,6 +23,11 @@ namespace FanRide.Models
         public string? Province { get; set; }
 
         [Required]
+        [Phone]
+        [Display(Name = "Phone Number")]
+        public string PhoneNumber { get; set; } = null!;
+
+        [Required]
         public string Role { get; set; } = null!;
     }
 }

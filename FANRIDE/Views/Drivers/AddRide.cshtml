@@ -1,0 +1,105 @@
+﻿@model FanRide.Models.RideViewModel
+
+@{
+    ViewData["Title"] = "Post a Ride";
+}
+
+<div class="container py-5">
+
+    @if (ViewBag.Success != null)
+    {
+        <div class="alert alert-success text-center">
+            @ViewBag.Success
+        </div>
+    }
+    <!-- Top Bar -->
+    <div class="row mb-4 align-items-center">
+        <div class="col text-start">
+            <a asp-action="Dashboard" asp-controller="Drivers" class="btn btn-outline-secondary px-3 py-2">
+                ← Back to Dashboard
+            </a>
+        </div>
+        <div class="col text-center">
+            <h2 class="fw-bold text-dark">🚗 Post a Ride</h2>
+        </div>
+        <div class="col text-end">
+            <a asp-action="MyRides" asp-controller="Drivers" class="btn btn-success px-4 py-2">🧍 My Rides</a>
+        </div>
+    </div>
+
+    <!-- Show any success/error messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <!-- Validation summary -->
+    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+    <!-- Form -->
+    <form asp-action="AddRide" method="post" class="mx-auto" style="max-width: 600px;">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="EventId" />
+        <input type="hidden" asp-for="EventTitle" />
+
+        <!-- Concert Info -->
+        <div class="mb-3">
+            <label class="form-label">Concert Title</label>
+            <input type="text" class="form-control" value="@Model.EventTitle" disabled />
+        </div>
+
+        <!-- Landmark Dropdown -->
+        <div class="mb-3">
+            <label asp-for="LandmarkId" class="form-label">Pickup Landmark</label>
+            <select asp-for="LandmarkId" class="form-select" asp-items="Model.LandmarkSelectList">
+                <option value="">-- Select Landmark --</option>
+            </select>
+            <span asp-validation-for="LandmarkId" class="text-danger"></span>
+        </div>
+
+        <!-- Rear Seats -->
+<div class="mb-3">
+    <label asp-for="RearSeatCount" class="form-label">Rear Seats Available</label>
+    <input asp-for="RearSeatCount" class="form-control" type="number" min="0" />
+    <span asp-validation-for="RearSeatCount" class="text-danger"></span>
+</div>
+
+
+        <!-- Plate Number -->
+        <div class="mb-3">
+            <label asp-for="PlateNumber" class="form-label">Plate Number</label>
+            <input asp-for="PlateNumber" class="form-control" />
+            <span asp-validation-for="PlateNumber" class="text-danger"></span>
+        </div>
+
+        <!-- Car Description -->
+        <div class="mb-3">
+            <label asp-for="CarType" class="form-label">Car Description</label>
+            <input asp-for="CarType" class="form-control" />
+            <span asp-validation-for="CarType" class="text-danger"></span>
+        </div>
+
+        <!-- Departure DateTime -->
+        <div class="mb-3">
+            <label asp-for="DepartureTime" class="form-label">Departure Time</label>
+            <input asp-for="DepartureTime" class="form-control" type="datetime-local"
+                   value="@Model.DepartureTime.ToString("yyyy-MM-ddTHH:mm")" />
+            <span asp-validation-for="DepartureTime" class="text-danger"></span>
+        </div>
+
+        <!-- Submit -->
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary px-5 py-2 fs-5">Post Ride</button>
+        </div>
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

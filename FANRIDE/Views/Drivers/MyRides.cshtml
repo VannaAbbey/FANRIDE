@@ -1,0 +1,91 @@
+﻿@model List<FanRide.Models.RideWithPassengersViewModel>
+
+@{
+    ViewData["Title"] = "My Posted Rides";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a asp-action="Dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+        <h2 class="text-center text-2xl font-bold text-gray-800 mx-auto">🚗 My Posted Rides</h2>
+        <span></span> @* Empty span to balance flexbox layout *@
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center text-gray-600 mt-4">
+            <p>You haven't posted any rides yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive mt-4">
+            <table class="table table-bordered shadow-sm" style="border-color: #e2e2e2;">
+                <thead style="background-color: #f3e8ff; color: #333;">
+                    <tr>
+                        <th>Concert</th>
+                        <th>Location</th>
+                        <th>Landmark</th>
+                        <th>Departure</th>
+                        <th>Vehicle</th>
+                        <th>Plate #</th>
+                        <th>Seats</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ride in Model)
+                    {
+                        <tr class="bg-white align-middle">
+                            <td>@ride.ConcertTitle</td>
+                            <td>@ride.Location</td>
+                            <td>@ride.LandmarkName</td>
+                            <td>@ride.DepartureTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td>@ride.CarType</td>
+                            <td>@ride.PlateNumber</td>
+                            <td>
+                                <strong>Total:</strong> @(1 + ride.RearSeats)<br />
+                                <small>(Front: 1, Rear: @ride.RearSeats)</small>
+                            </td>
+                            <td>
+                                <a asp-action="EditRide" asp-route-id="@ride.RideId" class="btn btn-sm btn-outline-warning me-1">✏️ Edit</a>
+                                <a asp-action="DeleteRide" asp-route-id="@ride.RideId" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this ride?');">🗑️ Delete</a>
+                            </td>
+                        </tr>
+
+                        @if (ride.Passengers != null && ride.Passengers.Any())
+                        {
+                            <tr style="background-color:#fff4db;">
+                                <td colspan="8" class="p-3">
+                                    <strong>👥 Passengers:</strong>
+                                    <ul class="mb-0 ps-3">
+                                        @foreach (var p in ride.Passengers)
+                                        {
+                                            <li>
+                                                <strong>@p.Name</strong> 
+                                                <br />
+                                                <span style="font-weight: 600; color: #333;">
+                                                    📞 Contact Number: <span style="font-weight: 500;">@p.PhoneNumber</span>
+                                                </span>
+                                                <br />
+                                                <span class="text-muted">🎫 @p.SeatCount x @p.SeatType</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr style="background-color:#fffbea;">
+                                <td colspan="8" class="text-muted text-center py-2">
+                                    No passengers have booked this ride yet.
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

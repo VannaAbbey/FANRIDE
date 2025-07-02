@@ -29,11 +29,14 @@
     <label>Province</label>
     <input asp-for="Province" class="form-control" />
     <br />
+    <label>Phone Number</label>
+    <input asp-for="PhoneNumber" type="tel" class="form-control" required />
+    <br />
     <label>Role</label>
-    <select asp-for="Role" class="form-control">
-        <option>Rider</option>
-        <option>Driver</option>
-        <option>Admin</option>
+    <select asp-for="Role" class="form-control" required>
+        <option value="Rider">Rider</option>
+        <option value="Driver">Driver</option>
+        <option value="Admin">Admin</option>
     </select>
     <br />
     <button type="submit" class="btn btn-success">Register</button>

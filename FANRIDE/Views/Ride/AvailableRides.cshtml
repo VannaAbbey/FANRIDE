@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Available Rides";
 }
+
 <!-- Back to Dashboard Button -->
 <div class="mb-3">
     <a asp-controller="Riders" asp-action="Dashboard" class="btn btn-outline-secondary">
@@ -38,7 +39,7 @@
                                 <p><strong>Total Seats Left:</strong> @ride.TotalSeatsLeft</p>
 
                                 <form asp-action="BookRide" asp-controller="Ride" method="post">
-                                    <input type="hidden" name="rideId" value="@ride.Id" />
+                                    <input type="hidden" name="rideId" value="@ride.RideId" />
 
                                     <div class="mb-2">
                                         <strong>Seat Options:</strong>

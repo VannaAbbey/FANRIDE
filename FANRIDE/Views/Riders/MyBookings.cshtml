@@ -5,7 +5,14 @@
 }
 
 <div class="container py-5">
-    <h2 class="text-center text-2xl font-bold mb-4 text-gray-800">🎟️ My Booked Rides</h2>
+
+    <!-- Header and Back Button -->
+    <div class="position-relative mb-4">
+        <a asp-controller="Riders" asp-action="Dashboard" class="btn btn-secondary position-absolute start-0">
+            ← Back to Dashboard
+        </a>
+        <h2 class="text-center text-2xl font-bold text-gray-800">🎟️ My Booked Rides</h2>
+    </div>
 
     @if (Model == null || !Model.Any())
     {
@@ -15,38 +22,43 @@
     }
     else
     {
-        <div class="overflow-x-auto mt-4">
-            <table class="min-w-full table-auto border border-gray-300 shadow-sm mx-auto">
-                <thead class="bg-gray-100 text-gray-700">
-                    <tr>
-                        <th class="border p-2 text-left">Concert</th>
-                        <th class="border p-2 text-left">Date</th>
-                        <th class="border p-2 text-left">Location</th>
-                        <th class="border p-2 text-left">Landmark</th>
-                        <th class="border p-2 text-left">Departure</th>
-                        <th class="border p-2 text-left">Vehicle</th>
-                        <th class="border p-2 text-left">Plate</th>
-                        <th class="border p-2 text-left">Seat Type</th>
-                        <th class="border p-2 text-left">Seats</th>
-                        <th class="border p-2 text-left">Price</th>
-                        <th class="border p-2 text-left">Status</th>
+        <div class="table-responsive mt-4">
+            <table class="table table-bordered mx-auto shadow-sm" style="border-color: #e2e2e2; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border-radius: 8px;">
+                <thead style="background-color: #f3e8ff; color: #333;">
+                    <tr style="border-bottom: 1px solid #ccc;">
+                        <th class="p-2 text-left">Concert</th>
+                        <th class="p-2 text-left">Date</th>
+                        <th class="p-2 text-left">Location</th>
+                        <th class="p-2 text-left">Landmark</th>
+                        <th class="p-2 text-left">Departure</th>
+                        <th class="p-2 text-left">Vehicle</th>
+                        <th class="p-2 text-left">Seat Type</th>
+                        <th class="p-2 text-left">Seats</th>
+                        <th class="p-2 text-left">Price</th>
+                        <th class="p-2 text-left">Status</th>
+                        <th class="p-2 text-left">Receipt</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var booking in Model)
                     {
-                        <tr class="hover:bg-gray-50">
-                            <td class="border p-2">@booking.ConcertName</td>
-                            <td class="border p-2">@booking.ConcertDate.ToString("MMM dd, yyyy hh:mm tt")</td>
-                            <td class="border p-2">@booking.ConcertLocation</td>
-                            <td class="border p-2">@booking.Landmark</td>
-                            <td class="border p-2">@booking.DepartureTime.ToString("MMM dd, yyyy hh:mm tt")</td>
-                            <td class="border p-2">@booking.VehicleType</td>
-                            <td class="border p-2">@booking.PlateNumber</td>
-                            <td class="border p-2">@booking.SeatType</td>
-                            <td class="border p-2">@booking.SeatCount</td>
-                            <td class="border p-2">₱@booking.Price.ToString("N2")</td>
-                            <td class="border p-2">@booking.Status</td>
+                        <tr class="bg-white hover:bg-gray-50">
+                            <td class="p-2">@booking.ConcertName</td>
+                            <td class="p-2">@booking.ConcertDate.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td class="p-2">@booking.ConcertLocation</td>
+                            <td class="p-2">@booking.Landmark</td>
+                            <td class="p-2">@booking.DepartureTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td class="p-2">@booking.VehicleType</td>
+                            <td class="p-2">@booking.SeatType</td>
+                            <td class="p-2">@booking.SeatCount</td>
+                            <td class="p-2">₱@booking.Price.ToString("N2")</td>
+                            <td class="p-2">@booking.Status</td>
+                            <td class="p-2">
+                                <button class="btn btn-outline-dark btn-sm"
+                                        onclick="showReceipt('@booking.ConcertName', '@booking.DepartureTime.ToString("MMM dd, yyyy hh:mm tt")', '@booking.Landmark', '@booking.VehicleType', '@booking.SeatType', '@booking.SeatCount', '₱@booking.Price.ToString("N2")', '@booking.DriverName', '@booking.DriverPhone')">
+                                    Show Receipt
+                                </button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -54,9 +66,44 @@
         </div>
     }
 
-    <div class="text-center mt-5">
-        <a asp-controller="Riders" asp-action="Dashboard" class="btn btn-secondary">
-            ← Back to Dashboard
-        </a>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal fade" id="receiptModal" tabindex="-1" role="dialog" aria-labelledby="receiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="receiptModalLabel">Booking Receipt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-sm" id="receiptContent">
+                <!-- Receipt content dynamically added here -->
+            </div>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function showReceipt(concert, departureTime, landmark, vehicle, seatType, seats, price, driverName, driverPhone) {
+            const content = `
+                <div class="p-2">
+                    <p><strong>Concert:</strong> ${concert}</p>
+                    <p><strong>Departure Date & Time:</strong> ${departureTime}</p>
+                    <p><strong>Pickup Landmark:</strong> ${landmark}</p>
+                    <p><strong>Vehicle:</strong> ${vehicle}</p>
+                    <p><strong>Seat Type:</strong> ${seatType}</p>
+                    <p><strong>Seats Booked:</strong> ${seats}</p>
+                    <p><strong>Price:</strong> ${price}</p>
+                    <hr>
+                    <p style="background-color:#ffeacc; padding: 10px; border-radius: 6px; font-weight: 500;">
+                        For any concerns, kindly contact the driver: <strong>${driverName}</strong> at <strong style="color: #000;">${driverPhone}</strong>
+                    </p>
+                </div>
+            `;
+            document.getElementById("receiptContent").innerHTML = content;
+            const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+            modal.show();
+        }
+    </script>
+}

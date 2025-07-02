@@ -1,0 +1,39 @@
+﻿@model List<FanRide.Models.Event>
+
+@{
+    ViewData["Title"] = "Driver Dashboard";
+}
+
+<h2 class="text-center mt-4">🎤 Post a Ride to an Upcoming Concert</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success text-center">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger text-center">@TempData["Error"]</div>
+}
+
+<div class="row mt-4">
+    @foreach (var concert in Model)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow">
+                <a href="@Url.Action("AddRide", "Drivers", new { eventId = concert.Id })" class="text-decoration-none text-dark">
+                    <img src="@concert.ImageUrl" class="card-img-top" style="height: 200px; object-fit: cover;" alt="@concert.Title">
+                    <div class="card-body">
+                        <h5 class="card-title">@concert.Title</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@concert.Artist</h6>
+                        <p>📅 @concert.Date.ToString("MMMM d, yyyy hh:mm tt")</p>
+                        <p>📍 @concert.Location</p>
+                        <p class="event-description">@concert.Description</p>
+                        <p class="text-center mt-3">
+                            <span class="btn btn-primary btn-sm">➕ Post a Ride</span>
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    }
+</div>

@@ -22,6 +22,9 @@ namespace FanRide.Models
 
         public string Province { get; set; }
 
+        public string PhoneNumber { get; set; } = null!; // ✅ ADD THIS
+
+
         [Required]
         public string Role { get; set; } // Admin, Rider, Driver
     }

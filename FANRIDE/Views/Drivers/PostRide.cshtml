@@ -1,0 +1,53 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model FanRide.Models.RideViewModel
+@{
+    ViewData["Title"] = "Post a Ride";
+}
+
+<div class="container py-5">
+    <h2 class="text-center text-2xl font-bold text-gray-800 mb-4">🛣️ Post a Ride for @Model.EventTitle</h2>
+
+    <form asp-action="PostRide" method="post" class="mx-auto" style="max-width: 600px;">
+        <input type="hidden" asp-for="EventId" />
+
+        <div class="mb-3">
+            <label asp-for="LandmarkId" class="form-label fw-semibold">Pickup Landmark</label>
+            <select asp-for="LandmarkId" class="form-select" required>
+                <option value="">-- Select a Landmark --</option>
+                @foreach (var lm in Model.Landmarks)
+                {
+                    <option value="@lm.Id">@lm.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="CarType" class="form-label fw-semibold">Vehicle Type</label>
+            <input asp-for="CarType" class="form-control" placeholder="e.g., Red Toyota Vios" required />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PlateNumber" class="form-label fw-semibold">Plate Number</label>
+            <input asp-for="PlateNumber" class="form-control" placeholder="e.g., ABC-1234" required />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="CarSeatsTotal" class="form-label fw-semibold">Total Available Seats</label>
+            <input asp-for="CarSeatsTotal" class="form-control" type="number" min="1" required />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="DepartureTime" class="form-label fw-semibold">Departure Date & Time</label>
+            <input asp-for="DepartureTime" class="form-control" type="datetime-local" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">✅ Post Ride</button>
+    </form>
+
+    <div class="text-center mt-4">
+        <a asp-action="Dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+

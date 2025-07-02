@@ -1,0 +1,54 @@
+﻿@model FanRide.Models.RideViewModel
+
+@{
+    ViewData["Title"] = "Edit Ride";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a asp-action="MyRides" class="btn btn-secondary">← Back to My Rides</a>
+        <h2 class="text-center text-2xl font-bold text-gray-800 mx-auto">✏️ Edit Ride Details</h2>
+        <span></span>
+    </div>
+
+    <form asp-action="EditRide" method="post" class="bg-white p-4 shadow rounded">
+        <input type="hidden" asp-for="RideId" />
+
+        <div class="mb-3">
+            <label asp-for="EventId" class="form-label">Concert Event</label>
+            <select asp-for="EventId" asp-items="Model.EventSelectList" class="form-select" disabled>
+                <option selected>-- Event Selected --</option>
+            </select>
+            <small class="text-muted">Concert cannot be changed once posted.</small>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="LandmarkId" class="form-label">Pickup Landmark</label>
+            <select asp-for="LandmarkId" asp-items="Model.LandmarkSelectList" class="form-select"></select>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="CarType" class="form-label">Vehicle Description</label>
+            <input asp-for="CarType" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PlateNumber" class="form-label">Plate Number</label>
+            <input asp-for="PlateNumber" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="CarSeatsTotal" class="form-label">Total Available Seats</label>
+            <input asp-for="CarSeatsTotal" class="form-control" type="number" min="1" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="DepartureTime" class="form-label">Departure Date & Time</label>
+            <input asp-for="DepartureTime" class="form-control" type="datetime-local" />
+        </div>
+
+        <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+        </div>
+    </form>
+</div>
