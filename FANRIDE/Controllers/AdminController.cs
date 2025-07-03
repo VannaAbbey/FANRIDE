@@ -9,7 +9,7 @@ namespace FanRide.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly string _connectionString = "server=localhost;database=fanride_db;user=root;password=Web123;";
+        private readonly string _connectionString = "server=localhost;database=fanride_db;user=root;password=1234;";
 
         // Admin Dashboard showing stats
         public IActionResult Dashboard()
@@ -84,8 +84,8 @@ namespace FanRide.Controllers
                 conn.Open();
 
                 var cmd = new MySqlCommand(@"
-            INSERT INTO Events (Title, Artist, DateTime, Location, Description, ImageUrl)
-            VALUES (@Title, @Artist, @DateTime, @Location, @Description, @ImageUrl);", conn);
+                    INSERT INTO Events (Title, Artist, DateTime, Location, Description, ImageUrl)
+                    VALUES (@Title, @Artist, @DateTime, @Location, @Description, @ImageUrl);", conn);
 
                 cmd.Parameters.AddWithValue("@Title", model.Title);
                 cmd.Parameters.AddWithValue("@Artist", model.Artist);
@@ -106,6 +106,120 @@ namespace FanRide.Controllers
             }
         }
 
+        // ✅ NEW: View All Users
+        public IActionResult AdminPanel()
+        {
+            var model = new AdminPanelViewModel
+            {
+                Users = new List<User>(),
+                Events = new List<Event>(),
+                Rides = new List<Ride>(),
+                Bookings = new List<BookingDetails>()
+            };
+
+            using var conn = new MySqlConnection(_connectionString);
+            conn.Open();
+
+            // Users
+            var cmdUsers = new MySqlCommand("SELECT * FROM Users", conn);
+            using var readerUsers = cmdUsers.ExecuteReader();
+            while (readerUsers.Read())
+            {
+                model.Users.Add(new User
+                {
+                    Id = readerUsers.GetInt32("Id"),
+                    FirstName = readerUsers.GetString("FirstName"),
+                    MiddleName = readerUsers.GetString("MiddleName"),
+                    LastName = readerUsers.GetString("LastName"),
+                    Email = readerUsers.GetString("Email"),
+                    Province = readerUsers.GetString("Province"),
+                    PhoneNumber = readerUsers.GetString("PhoneNumber"),
+                    Role = readerUsers.GetString("Role"),
+                    CreatedAt = readerUsers.GetDateTime("CreatedAt")
+                });
+            }
+
+            readerUsers.Close(); // Important before next reader
+
+            // Events
+            var cmdEvents = new MySqlCommand("SELECT * FROM Events", conn);
+            using var readerEvents = cmdEvents.ExecuteReader();
+            while (readerEvents.Read())
+            {
+                model.Events.Add(new Event
+                {
+                    Id = readerEvents.GetInt32("Id"),
+                    Title = readerEvents.GetString("Title"),
+                    Artist = readerEvents.GetString("Artist"),
+                    Date = readerEvents.GetDateTime("DateTime"),
+                    Location = readerEvents.GetString("Location"),
+                    Description = readerEvents.GetString("Description"),
+                    ImageUrl = readerEvents.GetString("ImageUrl")
+                });
+            }
+
+            readerEvents.Close(); // Important before next reader
+
+            // Rides
+            var cmdRides = new MySqlCommand("SELECT * FROM Rides", conn);
+            using var readerRides = cmdRides.ExecuteReader();
+            while (readerRides.Read())
+            {
+                model.Rides.Add(new Ride
+                {
+                    Id = readerRides.GetInt32("Id"),
+                    DriverId = readerRides.GetInt32("DriverId"),
+                    EventId = readerRides.GetInt32("EventId"),
+                    CarType = readerRides.GetString("CarType"),
+                    CarSeatsTotal = readerRides.GetInt32("CarSeatsTotal"),
+                    DepartureTime = readerRides.GetDateTime("DepartureTime")
+                });
+            }
+
+            readerRides.Close();
+
+            // Bookings
+            var cmdBookings = new MySqlCommand(@"
+            SELECT 
+                B.Id as BookingId,
+                B.SeatCount,
+                B.Price,
+                B.Status,
+                B.BookingDate,
+                E.Title AS ConcertName,
+                E.DateTime AS ConcertDate,
+                E.Location AS ConcertLocation,
+                R.DepartureTime,
+                R.CarType,
+                R.PlateNumber,
+                L.Name AS Landmark,
+                S.TypeName AS SeatType
+            FROM Bookings B
+            INNER JOIN Rides R ON B.RideId = R.Id
+            INNER JOIN Events E ON R.EventId = E.Id
+            INNER JOIN Landmarks L ON R.LandmarkId = L.Id
+            INNER JOIN SeatTypes S ON B.SeatTypeId = S.Id", conn);
+            using var readerBookings = cmdBookings.ExecuteReader();
+            while (readerBookings.Read())
+            {
+                model.Bookings.Add(new BookingDetails
+                {
+                    BookingId = readerBookings.GetInt32("BookingId"),
+                    ConcertName = readerBookings.GetString("ConcertName"),
+                    ConcertDate = readerBookings.GetDateTime("ConcertDate"),
+                    ConcertLocation = readerBookings.GetString("ConcertLocation"),
+                    Landmark = readerBookings.GetString("Landmark"),
+                    DepartureTime = readerBookings.GetDateTime("DepartureTime"),
+                    VehicleType = readerBookings.GetString("CarType"),
+                    SeatType = readerBookings.GetString("SeatType"),
+                    SeatCount = readerBookings.GetInt32("SeatCount"),
+                    Price = readerBookings.GetDecimal("Price"),
+                    Status = readerBookings.GetString("Status"),
+                });
+            }
+
+            return View("AdminPanel", model);
+        }
 
     }
 }

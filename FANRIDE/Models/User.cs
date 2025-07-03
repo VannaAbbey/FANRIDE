@@ -27,5 +27,7 @@ namespace FanRide.Models
 
         [Required]
         public string Role { get; set; } // Admin, Rider, Driver
+
+        public DateTime CreatedAt { get; set; } // ✅ Add this line
     }
 }

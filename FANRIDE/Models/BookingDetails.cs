@@ -14,7 +14,6 @@
         public int SeatCount { get; set; }
         public decimal Price { get; set; }
         public string Status { get; set; }
-
         public string DriverName { get; set; } // ✅ Added
         public string DriverPhone { get; set; } // ✅ Added
     }

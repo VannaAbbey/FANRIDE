@@ -1,0 +1,126 @@
+﻿@model FanRide.Models.AdminPanelViewModel
+@{
+    ViewData["Title"] = "Admin Panel";
+}
+
+<h2>Admin Panel</h2>
+
+<a asp-controller="Admin" asp-action="Dashboard" class="btn btn-secondary mb-3">← Back to Dashboard</a>
+
+<hr />
+<h3>👥 Registered Users</h3>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Province</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Joined</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@($"{user.FirstName} {user.MiddleName} {user.LastName}")</td>
+                <td>@user.Email</td>
+                <td>@user.Province</td>
+                <td>@user.PhoneNumber</td>
+                <td>@user.Role</td>
+                <td>@user.CreatedAt.ToString("yyyy-MM-dd")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+<h3>🎤 Events</h3>
+<table class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Artist</th>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ev in Model.Events)
+        {
+            <tr>
+                <td>@ev.Title</td>
+                <td>@ev.Artist</td>
+                <td>@ev.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@ev.Location</td>
+                <td>@ev.Description</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+<h3>🚗 Rides</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Driver ID</th>
+            <th>Event ID</th>
+            <th>Car Type</th>
+            <th>Total Seats</th>
+            <th>Departure Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ride in Model.Rides)
+        {
+            <tr>
+                <td>@ride.DriverId</td>
+                <td>@ride.EventId</td>
+                <td>@ride.CarType</td>
+                <td>@ride.CarSeatsTotal</td>
+                <td>@ride.DepartureTime.ToString("yyyy-MM-dd HH:mm")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+<h3>📄 Bookings</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Booking ID</th>
+            <th>Concert</th>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Landmark</th>
+            <th>Departure</th>
+            <th>Vehicle</th>
+            <th>Seat Type</th>
+            <th>Seats</th>
+            <th>Price</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var booking in Model.Bookings)
+        {
+            <tr>
+                    <td>@booking.BookingId</td>
+                <td>@booking.ConcertName</td>
+                <td>@booking.ConcertDate.ToString("yyyy-MM-dd")</td>
+                <td>@booking.ConcertLocation</td>
+                <td>@booking.Landmark</td>
+                <td>@booking.DepartureTime.ToString("HH:mm")</td>
+                <td>@booking.VehicleType</td>
+                <td>@booking.SeatType</td>
+                <td>@booking.SeatCount</td>
+                <td>₱@booking.Price.ToString("F2")</td>
+                <td>@booking.Status</td>
+            </tr>
+        }
+    </tbody>
+</table>
