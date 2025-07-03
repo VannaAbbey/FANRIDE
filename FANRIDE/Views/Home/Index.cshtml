@@ -2,10 +2,56 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome to FanRide</h1>
-    <p>Your K-pop concert ridesharing hub!</p>
-    <a href="/Account/Login" class="btn btn-primary m-2">Login</a>
-    <a href="/Account/Register" class="btn btn-secondary m-2">Register</a>
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+<head>
+    <style>
+        body {
+            background-image: url('/images/homebg.svg');
+            background-size: cover;
+            background-position: center 10%;
+            background-repeat: no-repeat;
+            background-color: #f0eee9;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .text-purple {
+            color: #5f4b8b;
+        }
+
+        .text-aqua {
+            color: #00abc0;
+        }
+
+        h1 {
+            color: #00abc0;
+        }
+
+        .btn-outline-primary.btn-custom {
+            color: #00abc0;
+            border-color: #00abc0; 
+            background-color: transparent; 
+        }
+
+        .btn-outline-primary.btn-custom:hover {
+                background-color: #e9d5ff;
+                border-color: #e9d5ff;
+            color: white;
+        }
+
+        .welcome-container {
+            margin-top: 220px;
+        }
+    </style>
+</head>
+
+<div class="welcome-container pt-5">
+    <h1 class="display-4 fw-bold">Welcome to FanRide</h1>
+    <p class="lead text-aqua">Your K-pop concert ridesharing hub!</p>
+    <a href="/Account/Login" class="btn btn-outline-primary m-2 btn-custom btn-lg">Login</a>
+    <a href="/Account/Register" class="btn btn-outline-primary m-2 btn-custom btn-lg">Register</a>
 </div>
+
+
+
 
